@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Health Data Evolution</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .graph-container {
+            text-align: center;
+        }
+        .graph {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        .health-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .bar-label {
+            font-size: 14px;
+            text-anchor: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Health Data Evolution</h1>
+
+        <div class="health-info">
+            <p><strong>Name:</strong> <span id="person-name"></span></p>
+            <p><strong>Health Stat:</strong> <span id="health-stat"></span></p>
+        </div>
+
+        <div class="graph-container">
+            <div id="bar-chart" class="graph"></div>
+        </div>
+
+        <script>
+            const plotDiv = document.getElementById('bar-chart');
+            const personNameSpan = document.getElementById('person-name');
+            const healthStatParagraph = document.getElementById('health-stat');
+
+            const cnpProvidedByUser = '{{ cnp }}';
+
+            fetch('/generate_graph', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ personal_code: cnpProvidedByUser, medical_field: 'blood_pressure' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                personNameSpan.textContent = data.name;
+                healthStatParagraph.textContent = Health Stat: ${data.stat.join(', ')};
+
+                const plotData = data.dates.map((date, index) => ({
+                    x: [date],
+                    y: [data.health_stat[date]],
+                    type: 'bar',
+                    name: date,
+                    text: [${data.day[index]}/${data.month[index]}/${data.year[index]}],
+                    hoverinfo: 'text+y'
+                }));
+
+                const layout = {
+                    title: 'Health Data Evolution',
+                    xaxis: { title: 'Date' },
+                    yaxis: { title: 'Health Stat' },
+                    barmode: 'group'
+                };
+
+                if (typeof Plotly !== 'undefined') {
+                    Plotly.react(plotDiv, plotData, layout);
+                } else {
+                    console.error('Plotly is not defined. Make sure it is properly loaded.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        </script>
+    </div>
+</body>
+</html>
